@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="LightAPI-Bukkit-5.1.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/LightAPI-Bukkit-5.1.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
