@@ -7,16 +7,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockFertilizeEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemBreakEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import raylcast.clans.helper.PlayerHelper;
 import raylcast.clans.models.ClanType;
 
 public class FarmerHandler extends ClanHandler {
@@ -101,7 +100,8 @@ public class FarmerHandler extends ClanHandler {
             return;
         }
         if (ageable.getAge() != ageable.getMaximumAge()){
-            if (mainItemType == Material.BONE_MEAL && mainItem.getAmount() == 1 && reducePlayerXP(e.getPlayer(), BoneMealCost)){
+            if (mainItemType == Material.BONE_MEAL && mainItem.getAmount() == 1 &&
+                    PlayerHelper.takeXP(e.getPlayer(), BoneMealCost)){
                 mainItem.setAmount(2);
             }
             return;
@@ -218,21 +218,5 @@ public class FarmerHandler extends ClanHandler {
         return ExpectedTPS * Random.nextInt(minSeconds, maxSeconds);
     }
 
-    private boolean reducePlayerXP(Player player, int amount){
-        int currentXP = (int) (player.getExpToLevel() * player.getExp());
 
-        if (currentXP < BoneMealCost){
-            if (player.getLevel() == 0){
-                 return false;
-            }
-
-            player.setLevel(player.getLevel() - 1);
-            player.setExp((player.getExpToLevel() + currentXP - BoneMealCost) / (float)player.getExpToLevel());
-        }
-        else {
-            player.setExp((currentXP - BoneMealCost) / (float)player.getExpToLevel());
-        }
-
-        return true;
-    }
 }
