@@ -51,7 +51,18 @@ public class TimedAbility {
     }
 
     public void startAbility(Player player, int duration){
-        if (AbilityStartTimes.containsKey(player)){
+        var current = AbilityStartTimes.get(player);
+
+        if (current != null){
+            long now = System.currentTimeMillis();
+
+            if (current.StartTime + current.Duration >= now + duration){
+                return;
+            }
+
+            current.StartTime = now;
+            current.Duration = duration;
+            AbilityStartTimes.put(player, current);
             return;
         }
         if (PlayersOnCooldown.contains(player)){

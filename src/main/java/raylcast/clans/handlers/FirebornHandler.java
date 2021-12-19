@@ -7,9 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -17,6 +15,7 @@ import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.ChargedAbility;
 import raylcast.clans.services.TimeCounter;
+import raylcast.clans.services.TimedAbility;
 
 public class FirebornHandler extends ClanHandler {
     private final double LavaResistance = 0.5;
@@ -31,14 +30,33 @@ public class FirebornHandler extends ClanHandler {
 
     private final int RocketJumpCooldownTicks = 120;
 
-    private TimeCounter WaterCounter;
-
-    private ChargedAbility RocketJumpChargeTimer;
+    private ChargedAbility WaterDamage;
+    private TimedAbility FireSpeed;
+    private ChargedAbility RocketJump;
 
     public void onEnable(){
-        WaterCounter = new TimeCounter();
+        WaterDamage = new ChargedAbility(Plugin,
+        player -> {
+        },
+        (player, time) -> {
+            if (time > 5000){
+                player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 65, (int)(time / 2000), true, false));
+            }
+            if (time > 10000){
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 65, (int)(time / 10000), true, false));
+            }
 
-        RocketJumpChargeTimer = new ChargedAbility(Plugin,
+            player.damage(time / 6000d);
+            return ChargeStateChange.None;
+        }, 30,
+        (player, time) -> {
+            return 0;
+        }, (player, time) -> {
+            player.setHealth(0);
+            return 0;
+        });
+
+        RocketJump = new ChargedAbility(Plugin,
             (player) -> {
                 player.setWalkSpeed(0);
             },
@@ -102,27 +120,20 @@ public class FirebornHandler extends ClanHandler {
             }
         );
 
-        Bukkit.getScheduler().runTaskTimer(Plugin, () -> {
-            long now = System.currentTimeMillis();
-
-            WaterCounter.StartTimes.forEach((player, startTime) -> {
-                long timeInWater = now - startTime;
-
-                if (timeInWater > 5000){
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 65, (int)timeInWater / 2000, true, false));
-                }
-                if (timeInWater > 10000){
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 65, (int)timeInWater / 10000, true, false));
-                }
-
-                player.damage(timeInWater / 6000d);
+        FireSpeed = new TimedAbility(Plugin,
+            player -> {
+                player.setWalkSpeed(0.28f);
+            },
+            ((player, time) -> false), 20,
+            (player, time) -> {
+                player.setWalkSpeed(0.2f);
+                return 0;
             });
-        }, 60, 60);
     }
 
     @Override
     public void onDisable() {
-        RocketJumpChargeTimer.onDisable();
+        RocketJump.onDisable();
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -134,11 +145,11 @@ public class FirebornHandler extends ClanHandler {
         }
 
         if (!e.isSneaking() || player.getLocation().getDirection().normalize().getY() < 0.9) {
-            RocketJumpChargeTimer.cancelCharge(player);
+            RocketJump.cancelCharge(player);
             return;
         }
 
-        RocketJumpChargeTimer.startCharge(player);
+        RocketJump.startCharge(player);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -150,10 +161,10 @@ public class FirebornHandler extends ClanHandler {
         }
 
         if (!player.isSneaking() || player.getLocation().getDirection().normalize().getY() < 0.9) {
-            RocketJumpChargeTimer.cancelCharge(player);
+            RocketJump.cancelCharge(player);
         }
         else {
-            RocketJumpChargeTimer.startCharge(player);
+            RocketJump.startCharge(player);
         }
 
         var block = player.getLocation().getBlock();
@@ -162,11 +173,11 @@ public class FirebornHandler extends ClanHandler {
             material == Material.SEAGRASS  || material == Material.TALL_SEAGRASS ||
             block.getBlockData() instanceof Waterlogged waterlogged && waterlogged.isWaterlogged())
         {
-            WaterCounter.TryStartCounting(player);
+            WaterDamage.startCharge(player);
             return;
         }
 
-        WaterCounter.TryStopCounting(player);
+        WaterDamage.cancelCharge(player);
     }
 
 
@@ -182,7 +193,7 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
-        RocketJumpChargeTimer.releaseCharge(player);
+        RocketJump.releaseCharge(player);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -202,7 +213,35 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
+        if (e.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK){
+            FireSpeed.startAbility(player, 1500);
+        }
+
         e.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player, ClanType.Fireborn)){
+            return;
+        }
+
+        WaterDamage.cancelCharge(player);
+        FireSpeed.cancelAbility(player);
+    }
+
+    @EventHandler
+    public void onPlayerKick(PlayerKickEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player, ClanType.Fireborn)){
+            return;
+        }
+
+        WaterDamage.cancelCharge(player);
+        FireSpeed.cancelAbility(player);
     }
 
     @EventHandler(ignoreCancelled = false)
@@ -215,7 +254,8 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
-        WaterCounter.TryStopCounting(player);
+        WaterDamage.cancelCharge(player);
+        FireSpeed.cancelAbility(player);
 
         Logger.info("Fireworker died, scheduled explosion");
 

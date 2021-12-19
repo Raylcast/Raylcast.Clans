@@ -9,6 +9,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.TimeCounterRunnable;
+import raylcast.clans.services.TimedAbility;
 
 public class ThunderbornHandler extends ClanHandler {
     private final double GuardianDamageMultiplier = 0.66;
@@ -16,27 +17,26 @@ public class ThunderbornHandler extends ClanHandler {
     private final int LightningDelayTicks = 50;
     private final int OverchargeDuration = 20000;
 
-    private final int KnockbackHealthThreshold = 8;
     private final int KnockbackIntensity = 3;
 
-    private TimeCounterRunnable OverchargeTimer;
+    private TimedAbility OverchargeAbility;
 
     public ThunderbornHandler(){
     }
 
     @Override
     public void onEnable() {
-        OverchargeTimer = new TimeCounterRunnable(Plugin, (player, time) -> {
-            if (time > OverchargeDuration){
-                player.sendMessage("Overcharge stop");
-                OverchargeTimer.TryStopCounting(player);
-                return;
-            }
-
-            player.sendMessage("Set light source");
-            var world = player.getWorld();
-            var location = player.getLocation().getBlock();
-        }, 20, 20);
+        OverchargeAbility = new TimedAbility(Plugin,
+            (player) -> {
+                player.setWalkSpeed(0.28f);
+            },
+            (player, time) -> {
+                return false;
+            }, 100,
+            (player, time) -> {
+                player.setWalkSpeed(0.2f);
+                return 0;
+            });
     }
 
     @Override
@@ -51,7 +51,7 @@ public class ThunderbornHandler extends ClanHandler {
         if (!isMember(player, ClanType.Thunderborn)){
             return;
         }
-        if (player.getHealth() > KnockbackHealthThreshold){
+        if(!OverchargeAbility.isCurrentlyActive(player)){
             return;
         }
 
@@ -80,7 +80,7 @@ public class ThunderbornHandler extends ClanHandler {
         }
 
         player.sendMessage("Overcharged!");
-        OverchargeTimer.TryStartCounting(player);
+        OverchargeAbility.startAbility(player, 20000);
         e.setDamage(e.getDamage() * GuardianDamageMultiplier);
     }
 
