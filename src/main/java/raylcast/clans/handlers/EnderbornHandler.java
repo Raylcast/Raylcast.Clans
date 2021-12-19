@@ -18,7 +18,7 @@ import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.ChargeAbility;
 
-public class EnchanterHandler extends ClanHandler {
+public class EnderbornHandler extends ClanHandler {
     private final double ExperienceMultiplier = 100;
     private final double FallDamageMultiplier = 0.2;
     private final double PearlDisappearChance = 0.1;
@@ -28,7 +28,7 @@ public class EnchanterHandler extends ClanHandler {
 
     private ChargeAbility HoverChargeTimer;
 
-    public EnchanterHandler(){
+    public EnderbornHandler(){
     }
 
     @Override

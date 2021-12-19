@@ -44,7 +44,7 @@ public class RaylcastClans extends JavaPlugin {
 
     public void InstantiateHandlers(){
         ClanHandlers.add(new FirebornHandler());
-        ClanHandlers.add(new EnchanterHandler());
+        ClanHandlers.add(new EnderbornHandler());
         ClanHandlers.add(new EarthbornHandler());
         ClanHandlers.add(new ThunderbornHandler());
 
