@@ -14,9 +14,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.spigotmc.event.entity.EntityDismountEvent;
-import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
-import raylcast.clans.services.ChargeAbility;
 import raylcast.clans.services.TimedAbility;
 
 public class EnderbornHandler extends ClanHandler {
@@ -65,11 +63,6 @@ public class EnderbornHandler extends ClanHandler {
                 }
 
                 world.spawnParticle(Particle.SMOKE_LARGE, player.getLocation(), 1, 0.5, 0.5, 0.5);
-
-                if (time > 10000){
-                    return true;
-                }
-
                 return false;
             }, 8,
             (player, time) -> {
@@ -123,7 +116,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.startCharge(player);
+        HoverAbility.startAbility(player, 7500);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)

@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import raylcast.clans.models.ChargeStateChange;
-import raylcast.clans.models.RunnableTimerEntry;
+import raylcast.clans.models.ChargedAbilityEntry;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class ChargeAbility {
-    private final Map<Player, RunnableTimerEntry> ChargeStartTimes;
+public class ChargedAbility {
+    private final Map<Player, ChargedAbilityEntry> ChargeStartTimes;
     private final Set<Player> PlayersOnCooldown;
 
     private final Plugin Plugin;
@@ -27,11 +27,11 @@ public class ChargeAbility {
     private final BiFunction<Player, Long, Integer> OnCancelHandler;
     private final BiFunction<Player, Long, Integer> OnReleaseHandler;
 
-    public ChargeAbility(Plugin plugin,
-                         Consumer<Player> onStartHandler,
-                         BiFunction<Player, Long, ChargeStateChange> onChargeHandler, int tickInterval,
-                         BiFunction<Player, Long, Integer> onCancelHandler,
-                         BiFunction<Player, Long, Integer> onReleaseHandler){
+    public ChargedAbility(Plugin plugin,
+                          Consumer<Player> onStartHandler,
+                          BiFunction<Player, Long, ChargeStateChange> onChargeHandler, int tickInterval,
+                          BiFunction<Player, Long, Integer> onCancelHandler,
+                          BiFunction<Player, Long, Integer> onReleaseHandler){
         ChargeStartTimes = new HashMap<>();
         PlayersOnCooldown = new HashSet<>();
 
@@ -67,7 +67,7 @@ public class ChargeAbility {
             }
         }, 1, TickInterval).getTaskId();
 
-        var entry = new RunnableTimerEntry(System.currentTimeMillis(), taskId);
+        var entry = new ChargedAbilityEntry(System.currentTimeMillis(), taskId);
         ChargeStartTimes.put(player, entry);
 
         OnStartHandler.accept(player);

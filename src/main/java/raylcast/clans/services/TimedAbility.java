@@ -3,7 +3,7 @@ package raylcast.clans.services;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import raylcast.clans.models.RunnableTimerEntry;
+import raylcast.clans.models.TimedAbilityEntry;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,7 +13,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class TimedAbility {
-    private final Map<Player, RunnableTimerEntry> AbilityStartTimes;
+    private final Map<Player, TimedAbilityEntry> AbilityStartTimes;
     private final Set<Player> PlayersOnCooldown;
 
     private final Plugin Plugin;
@@ -50,7 +50,7 @@ public class TimedAbility {
         });
     }
 
-    public void startCharge(Player player){
+    public void startAbility(Player player, int duration){
         if (AbilityStartTimes.containsKey(player)){
             return;
         }
@@ -62,6 +62,11 @@ public class TimedAbility {
             long now = System.currentTimeMillis();
             var entry = AbilityStartTimes.get(player);
 
+            if (now - entry.StartTime > entry.Duration){
+                cancelAbility(player);
+                return;
+            }
+
             boolean cancelAbility = OnTickHandler.apply(player, now - entry.StartTime);
 
             if (cancelAbility){
@@ -69,7 +74,7 @@ public class TimedAbility {
             }
         }, 1, TickInterval).getTaskId();
 
-        var entry = new RunnableTimerEntry(System.currentTimeMillis(), taskId);
+        var entry = new TimedAbilityEntry(System.currentTimeMillis(), taskId, duration);
         AbilityStartTimes.put(player, entry);
 
         OnStartHandler.accept(player);
