@@ -17,6 +17,7 @@ import org.spigotmc.event.entity.EntityDismountEvent;
 import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.ChargeAbility;
+import raylcast.clans.services.TimedAbility;
 
 public class EnderbornHandler extends ClanHandler {
     private final double ExperienceMultiplier = 100;
@@ -26,14 +27,14 @@ public class EnderbornHandler extends ClanHandler {
     private final double SphereRadius = 3;
     private final int HoverCooldownTicks = 200;
 
-    private ChargeAbility HoverChargeTimer;
+    private TimedAbility HoverAbility;
 
     public EnderbornHandler(){
     }
 
     @Override
     public void onEnable() {
-        HoverChargeTimer = new ChargeAbility(Plugin,
+        HoverAbility = new TimedAbility(Plugin,
             player -> {
                 var world = player.getWorld();
                 world.spawnEntity(player.getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
@@ -66,10 +67,10 @@ public class EnderbornHandler extends ClanHandler {
                 world.spawnParticle(Particle.SMOKE_LARGE, player.getLocation(), 1, 0.5, 0.5, 0.5);
 
                 if (time > 10000){
-                    return ChargeStateChange.Cancel;
+                    return true;
                 }
 
-                return ChargeStateChange.None;
+                return false;
             }, 8,
             (player, time) -> {
                 var world = player.getWorld();
@@ -81,25 +82,14 @@ public class EnderbornHandler extends ClanHandler {
                     entity.setCustomName("None");
                     entity.remove();
                 }
-                return 0;
-            },
-            (player, time) -> {
-                var world = player.getWorld();
-                for(var entity : world.getEntities()){
-                    if (!entity.getName().equals("BUBBLE_" + player.getName())){
-                        continue;
-                    }
 
-                    entity.setCustomName("None");
-                    entity.remove();
-                }
                 return HoverCooldownTicks;
             });
     }
 
     @Override
     public void onDisable() {
-        HoverChargeTimer.onDisable();
+        HoverAbility.onDisable();
     }
 
 
@@ -133,7 +123,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverChargeTimer.startCharge(player);
+        HoverAbility.startCharge(player);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
@@ -205,7 +195,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverChargeTimer.cancelCharge(player);
+        HoverAbility.cancelAbility(player);
 
         e.setDroppedExp(0);
         e.setNewExp(0);
@@ -220,7 +210,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverChargeTimer.cancelCharge(player);
+        HoverAbility.cancelAbility(player);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -231,6 +221,6 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverChargeTimer.cancelCharge(player);
+        HoverAbility.cancelAbility(player);
     }
 }
