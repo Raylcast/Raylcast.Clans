@@ -154,24 +154,6 @@ public class EnderbornHandler extends ClanHandler {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerToggleSneakEvent(PlayerToggleSneakEvent e){
-        if (!e.isSneaking()){
-            return;
-        }
-
-        var player = e.getPlayer();
-
-        if (!isMember(player, ClanType.Enderborn)){
-            return;
-        }
-        if (player.getLocation().getDirection().normalize().getY() < 0.9){
-            return;
-        }
-
-        player.setVelocity(player.getVelocity().setY(1));
-    }
-
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onPlayerDamage(EntityDamageEvent e){
         if (!(e.getEntity() instanceof Player player)){

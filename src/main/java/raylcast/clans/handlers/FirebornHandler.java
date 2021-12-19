@@ -122,6 +122,7 @@ public class FirebornHandler extends ClanHandler {
 
     @Override
     public void onDisable() {
+        RocketJumpChargeTimer.onDisable();
     }
 
     @EventHandler(ignoreCancelled = true)
