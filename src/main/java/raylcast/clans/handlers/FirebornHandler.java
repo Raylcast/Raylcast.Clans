@@ -15,7 +15,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
-import raylcast.clans.services.AbilityChargeTimer;
+import raylcast.clans.services.ChargeAbility;
 import raylcast.clans.services.TimeCounter;
 
 public class FirebornHandler extends ClanHandler {
@@ -33,12 +33,12 @@ public class FirebornHandler extends ClanHandler {
 
     private TimeCounter WaterCounter;
 
-    private AbilityChargeTimer RocketJumpChargeTimer;
+    private ChargeAbility RocketJumpChargeTimer;
 
     public void onEnable(){
         WaterCounter = new TimeCounter();
 
-        RocketJumpChargeTimer = new AbilityChargeTimer(Plugin,
+        RocketJumpChargeTimer = new ChargeAbility(Plugin,
             (player) -> {
                 player.setWalkSpeed(0);
             },

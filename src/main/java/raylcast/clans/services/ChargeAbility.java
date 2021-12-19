@@ -10,11 +10,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class AbilityChargeTimer {
+public class ChargeAbility {
     private final Map<Player, RunnableTimerEntry> ChargeStartTimes;
     private final Set<Player> PlayersOnCooldown;
 
@@ -28,11 +27,11 @@ public class AbilityChargeTimer {
     private final BiFunction<Player, Long, Integer> OnCancelHandler;
     private final BiFunction<Player, Long, Integer> OnReleaseHandler;
 
-    public AbilityChargeTimer(Plugin plugin,
-                              Consumer<Player> onStartHandler,
-                              BiFunction<Player, Long, ChargeStateChange> onChargeHandler, int tickInterval,
-                              BiFunction<Player, Long, Integer> onCancelHandler,
-                              BiFunction<Player, Long, Integer> onReleaseHandler){
+    public ChargeAbility(Plugin plugin,
+                         Consumer<Player> onStartHandler,
+                         BiFunction<Player, Long, ChargeStateChange> onChargeHandler, int tickInterval,
+                         BiFunction<Player, Long, Integer> onCancelHandler,
+                         BiFunction<Player, Long, Integer> onReleaseHandler){
         ChargeStartTimes = new HashMap<>();
         PlayersOnCooldown = new HashSet<>();
 

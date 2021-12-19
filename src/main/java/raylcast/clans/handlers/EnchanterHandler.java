@@ -16,7 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
-import raylcast.clans.services.AbilityChargeTimer;
+import raylcast.clans.services.ChargeAbility;
 
 public class EnchanterHandler extends ClanHandler {
     private final double ExperienceMultiplier = 100;
@@ -26,14 +26,14 @@ public class EnchanterHandler extends ClanHandler {
     private final double SphereRadius = 3;
     private final int HoverCooldownTicks = 200;
 
-    private AbilityChargeTimer HoverChargeTimer;
+    private ChargeAbility HoverChargeTimer;
 
     public EnchanterHandler(){
     }
 
     @Override
     public void onEnable() {
-        HoverChargeTimer = new AbilityChargeTimer(Plugin,
+        HoverChargeTimer = new ChargeAbility(Plugin,
             player -> {
                 var world = player.getWorld();
                 world.spawnEntity(player.getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
