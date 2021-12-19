@@ -1,9 +1,7 @@
 package raylcast.clans.handlers;
 
-import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import org.bukkit.*;
 import org.bukkit.block.data.Waterlogged;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
@@ -17,12 +15,10 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ClanType;
-import raylcast.clans.runnables.LimitedRunnable;
 import raylcast.clans.services.AbilityChargeTimer;
 import raylcast.clans.services.TimeCounter;
-import raylcast.clans.services.TimeCounterRunnable;
 
-public class FireworkerHandler extends ClanHandler {
+public class FirebornHandler extends ClanHandler {
     private final double LavaResistance = 0.5;
     private final int ExplosionDelayTicks = 50;
     private final int ExplosionPower = 6;

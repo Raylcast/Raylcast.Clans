@@ -1,11 +1,9 @@
 package raylcast.clans;
 
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import raylcast.clans.commands.clan.ClanCommand;
 import raylcast.clans.handlers.*;
 import raylcast.clans.services.ClanMemberService;
 import raylcast.clans.services.CommandHandlerService;
@@ -45,10 +43,10 @@ public class RaylcastClans extends JavaPlugin {
     }
 
     public void InstantiateHandlers(){
-        ClanHandlers.add(new FireworkerHandler());
+        ClanHandlers.add(new FirebornHandler());
         ClanHandlers.add(new EnchanterHandler());
-        ClanHandlers.add(new FarmerHandler());
-        ClanHandlers.add(new CyborgHandler());
+        ClanHandlers.add(new EarthbornHandler());
+        ClanHandlers.add(new ThunderbornHandler());
 
         for (var clanHandler : ClanHandlers){
             clanHandler.injectServices(Logger, Random, this, ClanMemberService, Config);

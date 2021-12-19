@@ -4,25 +4,24 @@ import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.TimeCounterRunnable;
-import ru.beykerykt.minecraft.lightapi.common.LightAPI;
 
-import java.util.HashSet;
-
-public class CyborgHandler extends ClanHandler {
+public class ThunderbornHandler extends ClanHandler {
     private final double GuardianDamageMultiplier = 0.66;
 
     private final int LightningDelayTicks = 50;
     private final int OverchargeDuration = 20000;
 
+    private final int KnockbackHealthThreshold = 8;
+    private final int KnockbackIntensity = 3;
+
     private TimeCounterRunnable OverchargeTimer;
 
-    public CyborgHandler(){
+    public ThunderbornHandler(){
     }
 
     @Override
@@ -44,8 +43,25 @@ public class CyborgHandler extends ClanHandler {
     public void onDisable() {
     }
 
-    @EventHandler
-    public void onBlockDamage(BlockDamageEvent e){
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent e){
+        if (!(e.getDamager() instanceof Player player)){
+            return;
+        }
+        if (!isMember(player, ClanType.Thunderborn)){
+            return;
+        }
+        if (player.getHealth() > KnockbackHealthThreshold){
+            return;
+        }
+
+        var damagedEntity = e.getEntity();
+        damagedEntity.setVelocity(player.getLocation().getDirection().setY(0).normalize().multiply(KnockbackIntensity));
+
+        var world = player.getWorld();
+
+        world.spawnParticle(Particle.GLOW, damagedEntity.getLocation(), 10);
+        world.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 2, 2);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -53,7 +69,7 @@ public class CyborgHandler extends ClanHandler {
         if (!(e.getEntity() instanceof Player player)){
             return;
         }
-        if (!isMember(player, ClanType.Cyborg)){
+        if (!isMember(player, ClanType.Thunderborn)){
             return;
         }
         if (e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK){
@@ -73,7 +89,7 @@ public class CyborgHandler extends ClanHandler {
         var deathLocation = e.getEntity().getLocation();
         var player = e.getEntity();
 
-        if (!isMember(player, ClanType.Cyborg)){
+        if (!isMember(player, ClanType.Thunderborn)){
             return;
         }
 

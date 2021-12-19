@@ -1,13 +1,11 @@
 package raylcast.clans.models;
 
-import javax.naming.OperationNotSupportedException;
-
 public enum ClanType {
     None(0),
     Fireborn(10),
-    Magician(20),
-    Farmer(30),
-    Cyborg(40);
+    Enderborn(20),
+    Earthborn(30),
+    Thunderborn(40);
 
     private final int Id;
 
@@ -26,11 +24,11 @@ public enum ClanType {
             case 10:
                 return Fireborn;
             case 20:
-                return Magician;
+                return Enderborn;
             case 30:
-                return Farmer;
+                return Earthborn;
             case 40:
-                return Cyborg;
+                return Thunderborn;
             default:
                 throw new RuntimeException("Invalid ClanType Id!");
         }

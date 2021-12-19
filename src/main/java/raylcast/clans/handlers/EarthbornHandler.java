@@ -18,7 +18,7 @@ import org.bukkit.potion.PotionEffectType;
 import raylcast.clans.helper.PlayerHelper;
 import raylcast.clans.models.ClanType;
 
-public class FarmerHandler extends ClanHandler {
+public class EarthbornHandler extends ClanHandler {
     private final int ExpectedTPS = 20;
     private final int TreeDelayTicks = 150;
     private final int PunishmentPercentage = 75;
@@ -26,7 +26,7 @@ public class FarmerHandler extends ClanHandler {
 
     private final int BoneMealCost = 4;
 
-    public FarmerHandler(){
+    public EarthbornHandler(){
     }
 
     @Override
@@ -50,7 +50,7 @@ public class FarmerHandler extends ClanHandler {
         if (!(e.getTarget() instanceof Player player)) {
             return;
         }
-        if (!isMember(player, ClanType.Farmer)){
+        if (!isMember(player, ClanType.Earthborn)){
             return;
         }
         if (e.getEntityType() != EntityType.BEE &&
@@ -75,7 +75,7 @@ public class FarmerHandler extends ClanHandler {
         if(mainItemType != Material.AIR && mainItemType != Material.BONE_MEAL){
             return;
         }
-        if (!isMember(e.getPlayer(), ClanType.Farmer)){
+        if (!isMember(e.getPlayer(), ClanType.Earthborn)){
             return;
         }
 
@@ -148,7 +148,7 @@ public class FarmerHandler extends ClanHandler {
         if (killer == null){
             return;
         }
-        if (!isMember(killer, ClanType.Farmer)){
+        if (!isMember(killer, ClanType.Earthborn)){
             return;
         }
 
@@ -163,7 +163,7 @@ public class FarmerHandler extends ClanHandler {
         var deathLocation = e.getEntity().getLocation();
         var player = e.getEntity();
 
-        if (!isMember(player, ClanType.Farmer)){
+        if (!isMember(player, ClanType.Earthborn)){
             return;
         }
 

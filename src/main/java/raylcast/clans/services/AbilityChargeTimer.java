@@ -107,4 +107,16 @@ public class AbilityChargeTimer {
             Bukkit.getScheduler().scheduleSyncDelayedTask(Plugin, () -> PlayersOnCooldown.remove(player), cooldown);
         }
     }
+
+    public void onDisable(){
+        long now = System.currentTimeMillis();
+        ChargeStartTimes.forEach((player, entry) -> {
+            OnCancelHandler.apply(player, now - entry.StartTime);
+            Bukkit.getScheduler().cancelTask(entry.TaskId);
+        });
+    }
+
+    public boolean isCurrentlyCharging(Player player){
+        return ChargeStartTimes.containsKey(player);
+    }
 }
