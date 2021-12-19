@@ -130,20 +130,24 @@ public class EnderbornHandler extends ClanHandler {
 
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e){
-        if (!isMember(e.getPlayer(), ClanType.Enderborn)){
+        var player = e.getPlayer();
+
+        if (!isMember(player, ClanType.Enderborn)){
             return;
         }
         if (e.getCause() != PlayerTeleportEvent.TeleportCause.ENDER_PEARL){
             return;
         }
 
+        HoverAbility.cancelAbility(player);
+
         var target = e.getTo();
 
-        e.getPlayer().teleport(target);
+        player.teleport(target);
         e.setCancelled(true);
 
         if (Random.nextDouble() >= PearlDisappearChance){
-            e.getPlayer().getInventory().addItem(new ItemStack(Material.ENDER_PEARL));
+            player.getInventory().addItem(new ItemStack(Material.ENDER_PEARL));
         }
     }
 

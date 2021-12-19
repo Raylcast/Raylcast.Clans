@@ -46,9 +46,11 @@ public class JoinCommand extends SubCommand {
         try{
             var clanType = ClanType.valueOf(args.get(0));
             ClanMemberService.SetPlayerClanType(player, clanType);
+
+            player.sendMessage(ChatColor.GREEN + "Success, Clan set!");
         }
         catch (IllegalArgumentException e){
-            commandSender.sendMessage(ChatColor.RED + "There is no clan with this name");
+            commandSender.sendMessage(ChatColor.RED + "There is no clan with this name. Please use the exact spelling!");
         }
 
         return true;
