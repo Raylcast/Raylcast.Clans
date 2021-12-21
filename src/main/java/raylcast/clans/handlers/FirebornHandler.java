@@ -244,6 +244,20 @@ public class FirebornHandler extends ClanHandler {
         FireSpeed.cancelAbility(player);
     }
 
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerItemDamage(PlayerItemDamageEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player, ClanType.Fireborn)){
+            return;
+        }
+        if (e.getItem().getType() != Material.FLINT_AND_STEEL){
+            return;
+        }
+
+        e.setCancelled(true);
+    }
+
     @EventHandler(ignoreCancelled = false)
     public void onPlayerDeath(PlayerDeathEvent e){
         var deathLocation = e.getEntity().getLocation();
@@ -251,6 +265,9 @@ public class FirebornHandler extends ClanHandler {
         var world = player.getWorld();
 
         if (!isMember(player, ClanType.Fireborn)){
+            return;
+        }
+        if (RocketJump.isCurrentlyCharging(player)){
             return;
         }
 
