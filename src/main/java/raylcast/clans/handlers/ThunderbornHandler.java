@@ -7,8 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import raylcast.clans.models.ClanType;
-import raylcast.clans.services.TimeCounterRunnable;
+import org.bukkit.permissions.Permission;
 import raylcast.clans.services.TimedAbility;
 
 public class ThunderbornHandler extends ClanHandler {
@@ -21,7 +20,8 @@ public class ThunderbornHandler extends ClanHandler {
 
     private TimedAbility OverchargeAbility;
 
-    public ThunderbornHandler(){
+    public ThunderbornHandler(Permission clanMemberPermission) {
+        super(clanMemberPermission);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class ThunderbornHandler extends ClanHandler {
         if (!(e.getDamager() instanceof Player player)){
             return;
         }
-        if (!isMember(player, ClanType.Thunderborn)){
+        if (!isMember(player)){
             return;
         }
         if(!OverchargeAbility.isCurrentlyActive(player)){
@@ -69,7 +69,7 @@ public class ThunderbornHandler extends ClanHandler {
         if (!(e.getEntity() instanceof Player player)){
             return;
         }
-        if (!isMember(player, ClanType.Thunderborn)){
+        if (!isMember(player)){
             return;
         }
         if (e.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK){
@@ -89,7 +89,7 @@ public class ThunderbornHandler extends ClanHandler {
         var deathLocation = e.getEntity().getLocation();
         var player = e.getEntity();
 
-        if (!isMember(player, ClanType.Thunderborn)){
+        if (!isMember(player)){
             return;
         }
 

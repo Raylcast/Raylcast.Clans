@@ -1,25 +1,29 @@
 package raylcast.clans.handlers;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.Permission;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import raylcast.clans.models.ClanType;
 import raylcast.clans.services.TimedAbility;
 
 public class EnderbornHandler extends ClanHandler {
-    private final double ExperienceMultiplier = 100;
-    private final double FallDamageMultiplier = 0.2;
+    private final double ExperienceMultiplier = 1.2;
     private final double PearlDisappearChance = 0.1;
 
     private final double SphereRadius = 3;
@@ -27,7 +31,8 @@ public class EnderbornHandler extends ClanHandler {
 
     private TimedAbility HoverAbility;
 
-    public EnderbornHandler(){
+    public EnderbornHandler(Permission clanMemberPermission) {
+        super(clanMemberPermission);
     }
 
     @Override
@@ -106,7 +111,7 @@ public class EnderbornHandler extends ClanHandler {
 
         var player = e.getPlayer();
 
-        if (!isMember(player, ClanType.Enderborn)){
+        if (!isMember(player)){
             return;
         }
         if (player.getInventory().getItemInMainHand().getType() != Material.FEATHER){
@@ -121,7 +126,7 @@ public class EnderbornHandler extends ClanHandler {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onExperienceChange(PlayerExpChangeEvent e){
-        if (!isMember(e.getPlayer(), ClanType.Enderborn)){
+        if (!isMember(e.getPlayer())){
             return;
         }
 
@@ -132,7 +137,7 @@ public class EnderbornHandler extends ClanHandler {
     public void onTeleport(PlayerTeleportEvent e){
         var player = e.getPlayer();
 
-        if (!isMember(player, ClanType.Enderborn)){
+        if (!isMember(player)){
             return;
         }
         if (e.getCause() != PlayerTeleportEvent.TeleportCause.ENDER_PEARL){
@@ -140,6 +145,9 @@ public class EnderbornHandler extends ClanHandler {
         }
 
         HoverAbility.cancelAbility(player);
+
+        var speed = new PotionEffect(PotionEffectType.SPEED, 10 * 20, 1, false, false);
+        player.addPotionEffect(speed);
 
         var target = e.getTo();
 
@@ -151,26 +159,54 @@ public class EnderbornHandler extends ClanHandler {
         }
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerDamage(EntityDamageEvent e){
-        if (!(e.getEntity() instanceof Player player)){
-            return;
-        }
-        if (!isMember(player, ClanType.Enderborn)){
-            return;
-        }
-        if (e.getCause() != EntityDamageEvent.DamageCause.FALL){
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerItemConsume(PlayerItemConsumeEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
             return;
         }
 
-        e.setDamage(e.getDamage() * FallDamageMultiplier);
+        if(e.getItem().getType() == Material.POTION ||
+           e.getItem().getType() == Material.MILK_BUCKET ||
+           e.getItem().getType() == Material.CHORUS_FRUIT){
+            return;
+        }
+
+        if (Random.nextDouble() > 0.1){
+            return;
+        }
+
+        for(int i = 0; i < 10; i++){
+            int offsetX = Random.nextInt(32) - 16;
+            int offsetY = Random.nextInt(32) - 16;
+            int offsetZ = Random.nextInt(32) - 16;
+
+            int airCount = 0;
+
+            for(; player.getLocation().getBlockY() + offsetY > -60; offsetY--) {
+                var target = player.getLocation().add(offsetX, offsetY, offsetZ);
+
+                if (target.getBlock().getType() == Material.AIR){
+                    airCount++;
+                    continue;
+                }
+                if (airCount < 2){
+                    airCount = 0;
+                    continue;
+                }
+                if (player.teleport(target.add(0, 1, 0))){
+                    return;
+                }
+            }
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent e){
         var player = e.getPlayer();
 
-        if (!isMember(player, ClanType.Enderborn)){
+        if (!isMember(player)){
             return;
         }
 
@@ -179,13 +215,18 @@ public class EnderbornHandler extends ClanHandler {
         e.setDroppedExp(0);
         e.setNewExp(0);
         e.setNewLevel(0);
+
+        var deathLoc = e.getPlayer().getLocation();
+        var location = new Location(player.getWorld(), deathLoc.getBlockX(), deathLoc.getBlockY() + 100, deathLoc.getBlockZ(), 90, 0);
+        var fireball = e.getPlayer().getWorld().spawn(location, DragonFireball.class);
+        fireball.setDirection(new Vector().setY(-3));
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerQuit(PlayerQuitEvent e){
         var player = e.getPlayer();
 
-        if (!isMember(player, ClanType.Enderborn)){
+        if (!isMember(player)){
             return;
         }
 
@@ -196,7 +237,7 @@ public class EnderbornHandler extends ClanHandler {
     public void onPlayerKick(PlayerKickEvent e){
         var player = e.getPlayer();
 
-        if (!isMember(player, ClanType.Enderborn)){
+        if (!isMember(player)){
             return;
         }
 

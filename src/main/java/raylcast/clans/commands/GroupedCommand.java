@@ -39,6 +39,10 @@ public abstract class GroupedCommand extends CommandBase {
             commandSender.sendMessage(getGroupedUsage());
             return true;
         }
+        if (!commandSender.hasPermission(subCommand.getPermission())){
+            commandSender.sendMessage("You do not have permissions to run this command!");
+            return true;
+        }
 
         boolean success = subCommand.onCommand(commandSender, Arrays.stream(args).skip(1).toList());
 

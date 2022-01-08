@@ -1,6 +1,7 @@
 package raylcast.clans.commands.clan.sub;
 
 import org.bukkit.command.CommandSender;
+import org.bukkit.permissions.Permission;
 import raylcast.clans.commands.SubCommand;
 import raylcast.clans.models.ClanType;
 
@@ -22,6 +23,11 @@ public class InfoCommand extends SubCommand {
     @Override
     public String getDescription() {
         return "Show information about a clan";
+    }
+
+    @Override
+    public Permission getPermission() {
+        return new Permission("raylcast.clans.command.clan.info");
     }
 
     @Override

@@ -1,7 +1,6 @@
 package raylcast.clans.commands.clan.sub;
 
 import net.luckperms.api.LuckPerms;
-import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -15,16 +14,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class JoinCommand extends SubCommand {
+public class LeaveCommand extends SubCommand {
     private LuckPerms LuckPerms;
 
     @Override
     public String getName() {
-        return "Join";
+        return "Leave";
     }
     @Override
     public String getDescription() {
-        return "Join a clan";
+        return "Leave a clan";
     }
 
     @Override
@@ -34,7 +33,7 @@ public class JoinCommand extends SubCommand {
 
     @Override
     public Permission getPermission() {
-        return new Permission("raylcast.clans.command.clan.join");
+        return new Permission("raylcast.clans.command.clan.leave");
     }
 
     @Override
@@ -57,10 +56,9 @@ public class JoinCommand extends SubCommand {
                 var userData = user.data();
                 var node = userData.toCollection().stream().filter(n -> n.getKey().equals(clanType.getPermission().getName())).findFirst();
                 node.ifPresent(userData::remove);
-                user.data().add(Node.builder(clanType.getPermission().getName()).build());
             });
 
-            player.sendMessage(ChatColor.GREEN + "Success, You've joined " + clanType.name());
+            player.sendMessage(ChatColor.GREEN + "Success, You've left " + clanType.name());
         }
         catch (IllegalArgumentException e){
             commandSender.sendMessage(ChatColor.RED + "There is no clan with this name. Please use the exact spelling!");

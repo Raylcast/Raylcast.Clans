@@ -1,13 +1,15 @@
 package raylcast.clans;
 
+import net.luckperms.api.LuckPerms;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.java.JavaPlugin;
 import raylcast.clans.handlers.*;
-import raylcast.clans.services.ClanMemberService;
+import raylcast.clans.models.ClanType;
 import raylcast.clans.services.CommandHandlerService;
-import raylcast.clans.services.FileStorage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,11 +22,9 @@ public class RaylcastClans extends JavaPlugin {
     private final Random Random;
 
     private final List<ClanHandler> ClanHandlers;
-
-    private final FileStorage Storage;
-    private final ClanMemberService ClanMemberService;
     private final CommandHandlerService CommandHandlerService;
 
+    private LuckPerms LuckPerms;
     private FileConfiguration Config;
 
     public RaylcastClans(){
@@ -32,9 +32,7 @@ public class RaylcastClans extends JavaPlugin {
         Random = new Random();
         ClanHandlers = new ArrayList<>();
 
-        Storage = new FileStorage();
-        ClanMemberService = new ClanMemberService(Storage);
-        CommandHandlerService = new CommandHandlerService(this, ClanMemberService);
+        CommandHandlerService = new CommandHandlerService(this);
 
         saveDefaultConfig();
         Config = getConfig();
@@ -43,13 +41,13 @@ public class RaylcastClans extends JavaPlugin {
     }
 
     public void InstantiateHandlers(){
-        ClanHandlers.add(new FirebornHandler());
-        ClanHandlers.add(new EnderbornHandler());
-        ClanHandlers.add(new EarthbornHandler());
-        ClanHandlers.add(new ThunderbornHandler());
+        ClanHandlers.add(new FirebornHandler(ClanType.Fireborn.getPermission()));
+        ClanHandlers.add(new EnderbornHandler(ClanType.Enderborn.getPermission()));
+        ClanHandlers.add(new EarthbornHandler(ClanType.Earthborn.getPermission()));
+        ClanHandlers.add(new ThunderbornHandler(ClanType.Thunderborn.getPermission()));
 
         for (var clanHandler : ClanHandlers){
-            clanHandler.injectServices(Logger, Random, this, ClanMemberService, Config);
+            clanHandler.injectServices(Logger, Random, this, Config);
         }
     }
 
@@ -70,7 +68,13 @@ public class RaylcastClans extends JavaPlugin {
             clanHandler.onEnable();
         }
 
-        ClanMemberService.onEnable();
+        var registration = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
+
+        if (registration == null){
+            throw new IllegalStateException("Can't enable the plugin without Luckperms installed!");
+        }
+
+        LuckPerms = registration.getProvider();
         CommandHandlerService.onEnable();
         Config = getConfig();
     }
@@ -84,7 +88,6 @@ public class RaylcastClans extends JavaPlugin {
         }
 
         CommandHandlerService.onDisable();
-        ClanMemberService.onDisable();
     }
 
     @Override

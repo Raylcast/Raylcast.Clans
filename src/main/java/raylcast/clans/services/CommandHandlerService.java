@@ -1,5 +1,6 @@
 package raylcast.clans.services;
 
+import net.luckperms.api.LuckPerms;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,15 +13,12 @@ import java.util.Map;
 
 public class CommandHandlerService {
     private final JavaPlugin Plugin;
-    private final ClanMemberService ClanMemberService;
-
     private final Map<String, CommandBase> Commands;
 
-    public CommandHandlerService(JavaPlugin plugin, ClanMemberService clanMemberService){
+    public CommandHandlerService(JavaPlugin plugin){
         Commands = new HashMap<>();
 
         Plugin = plugin;
-        ClanMemberService = clanMemberService;
 
         for (var command : GetCommands()){
             Commands.put(command.getName().toUpperCase(), command);
@@ -29,14 +27,20 @@ public class CommandHandlerService {
 
     private CommandBase[] GetCommands(){
         return new CommandBase[] {
-          new ClanCommand(ClanMemberService),
+          new ClanCommand(),
         };
     }
 
     public void onEnable(){
         for(var command : Commands.values()){
-            Plugin.getCommand(command.getName()).setExecutor(command);
-            Plugin.getCommand(command.getName()).setTabCompleter(Plugin);
+            var cmd = Plugin.getCommand(command.getName());
+
+            if (cmd == null){
+                throw new NullPointerException("cmd is null");
+            }
+
+            cmd.setExecutor(command);
+            cmd.setTabCompleter(Plugin);
         }
     }
 

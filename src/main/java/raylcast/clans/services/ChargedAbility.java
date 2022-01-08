@@ -5,34 +5,39 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import raylcast.clans.models.ChargeStateChange;
 import raylcast.clans.models.ChargedAbilityEntry;
+import raylcast.clans.models.TriFunction;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class ChargedAbility {
+public class ChargedAbility<T> {
     private final Map<Player, ChargedAbilityEntry> ChargeStartTimes;
+    private final Map<Player, T> StateMap;
+
     private final Set<Player> PlayersOnCooldown;
 
     private final Plugin Plugin;
 
-    private final Consumer<Player> OnStartHandler;
+    private final Function<Player, T> OnStartHandler;
 
-    private final BiFunction<Player, Long, ChargeStateChange> OnChargeHandler;
+    private final TriFunction<Player, Long, T, ChargeStateChange> OnChargeHandler;
     private final int TickInterval;
 
-    private final BiFunction<Player, Long, Integer> OnCancelHandler;
-    private final BiFunction<Player, Long, Integer> OnReleaseHandler;
+    private final TriFunction<Player, Long, T, Integer> OnCancelHandler;
+    private final TriFunction<Player, Long, T, Integer> OnReleaseHandler;
 
     public ChargedAbility(Plugin plugin,
-                          Consumer<Player> onStartHandler,
-                          BiFunction<Player, Long, ChargeStateChange> onChargeHandler, int tickInterval,
-                          BiFunction<Player, Long, Integer> onCancelHandler,
-                          BiFunction<Player, Long, Integer> onReleaseHandler){
+                          Function<Player, T> onStartHandler,
+                          TriFunction<Player, Long, T, ChargeStateChange> onChargeHandler, int tickInterval,
+                          TriFunction<Player, Long, T, Integer> onCancelHandler,
+                          TriFunction<Player, Long, T, Integer> onReleaseHandler){
         ChargeStartTimes = new HashMap<>();
+        StateMap = new HashMap<>();
+
         PlayersOnCooldown = new HashSet<>();
 
         Plugin = plugin;
@@ -57,8 +62,9 @@ public class ChargedAbility {
         int taskId = Bukkit.getScheduler().runTaskTimer(Plugin, () -> {
             long now = System.currentTimeMillis();
             var entry = ChargeStartTimes.get(player);
+            var state = StateMap.get(player);
 
-            var stateChange = OnChargeHandler.apply(player, now - entry.StartTime);
+            var stateChange = OnChargeHandler.apply(player, now - entry.StartTime, state);
 
             if (stateChange == ChargeStateChange.Cancel){
                 cancelCharge(player);}
@@ -70,11 +76,13 @@ public class ChargedAbility {
         var entry = new ChargedAbilityEntry(System.currentTimeMillis(), taskId);
         ChargeStartTimes.put(player, entry);
 
-        OnStartHandler.accept(player);
+        var state = OnStartHandler.apply(player);
+        StateMap.put(player, state);
     }
 
     public void cancelCharge(Player player){
         var entry = ChargeStartTimes.remove(player);
+        var state = StateMap.remove(player);
 
         if (entry == null){
             return;
@@ -82,7 +90,7 @@ public class ChargedAbility {
 
         long now = System.currentTimeMillis();
         Bukkit.getScheduler().cancelTask(entry.TaskId);
-        long cooldown = OnCancelHandler.apply(player, now - entry.StartTime);
+        long cooldown = OnCancelHandler.apply(player, now - entry.StartTime, state);
 
         if (cooldown > 0){
             PlayersOnCooldown.add(player);
@@ -92,6 +100,7 @@ public class ChargedAbility {
 
     public void releaseCharge(Player player){
         var entry = ChargeStartTimes.remove(player);
+        var state = StateMap.remove(player);
 
         if (entry == null){
             return;
@@ -99,7 +108,7 @@ public class ChargedAbility {
 
         long now = System.currentTimeMillis();
         Bukkit.getScheduler().cancelTask(entry.TaskId);
-        long cooldown = OnReleaseHandler.apply(player, now - entry.StartTime);
+        long cooldown = OnReleaseHandler.apply(player, now - entry.StartTime, state);
 
         if (cooldown > 0){
             PlayersOnCooldown.add(player);
@@ -110,7 +119,8 @@ public class ChargedAbility {
     public void onDisable(){
         long now = System.currentTimeMillis();
         ChargeStartTimes.forEach((player, entry) -> {
-            OnCancelHandler.apply(player, now - entry.StartTime);
+            var state = StateMap.get(player);
+            OnCancelHandler.apply(player, now - entry.StartTime, state);
             Bukkit.getScheduler().cancelTask(entry.TaskId);
         });
     }

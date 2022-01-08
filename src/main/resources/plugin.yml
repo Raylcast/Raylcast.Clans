@@ -8,3 +8,29 @@ commands:
   clan:
     description: Clan Commands
     usage: /clan [Subcommand]
+permissions:
+  raylcast.clans.member.fireborn:
+    default: false
+  raylcast.clans.member.earthborn:
+    default: false
+  raylcast.clans.member.enderborn:
+    default: false
+  raylcast.clans.member.thunderborn:
+    default: false
+  raylcast.clans.member.*:
+    default: false
+    children:
+      raylcast.clans.member.fireborn: true
+      raylcast.clans.member.earthborn: true
+      raylcast.clans.member.enderborn: true
+      raylcast.clans.member.thunderborn: true
+  raylcast.clans.command.info:
+    default: false
+  raylcast.clans.command.join:
+    default: true
+  raylcast.clans.command.leave:
+    default: true
+  raylcast.clans.command.list:
+    default: true
+depend:
+  - LuckPerms
