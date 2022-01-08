@@ -1,7 +1,11 @@
 package raylcast.clans.commands.clan.sub;
 
+import net.luckperms.api.node.Node;
+import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.permissions.Permission;
+import raylcast.clans.InfoTexts;
 import raylcast.clans.commands.SubCommand;
 import raylcast.clans.models.ClanType;
 
@@ -32,8 +36,20 @@ public class InfoCommand extends SubCommand {
 
     @Override
     public boolean onCommand(CommandSender commandSender, List<String> args) {
-        commandSender.sendMessage("Fine");
-        return false;
+        if (args.size() != 1){
+            return false;
+        }
+
+        try{
+            var clanType = ClanType.valueOf(args.get(0));
+            String text = InfoTexts.getText(clanType);
+            commandSender.sendMessage(ChatColor.GOLD + text);
+        }
+        catch (IllegalArgumentException e){
+            commandSender.sendMessage(ChatColor.RED + "There is no clan with this name. Please use the exact spelling!");
+        }
+
+        return true;
     }
 
     @Override

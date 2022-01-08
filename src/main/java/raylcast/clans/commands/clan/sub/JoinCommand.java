@@ -39,7 +39,7 @@ public class JoinCommand extends SubCommand {
 
     @Override
     public boolean onCommand(CommandSender commandSender, List<String> args) {
-        if (args.isEmpty()){
+        if (args.size() != 1){
             return false;
         }
         if (!(commandSender instanceof Player player)) {
