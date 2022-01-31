@@ -24,13 +24,15 @@ permissions:
       raylcast.clans.member.earthborn: true
       raylcast.clans.member.enderborn: true
       raylcast.clans.member.thunderborn: true
-  raylcast.clans.command.info:
+  raylcast.clans.command.clan.info:
     default: false
-  raylcast.clans.command.join:
-    default: true
-  raylcast.clans.command.leave:
-    default: true
-  raylcast.clans.command.list:
-    default: true
+  raylcast.clans.command.clan.join:
+    default: false
+  raylcast.clans.command.clan.leave:
+    default: false
+  raylcast.clans.command.clan.list:
+    default: false
+  raylcast.clans.command.clan:
+    default: false
 depend:
   - LuckPerms
