@@ -2,16 +2,20 @@ package raylcast.clans.handlers;
 
 import org.bukkit.*;
 import org.bukkit.block.data.Waterlogged;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.Permission;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -25,8 +29,8 @@ import raylcast.clans.services.TimedAbility;
 public class FirebornHandler extends ClanHandler {
     private final double LavaResistance = 0.5;
     private final int ExplosionDelayTicks = 50;
-    private final int ExplosionPower = 6;
-    private final int RocketJumpOverchargePower = 5;
+    private final int ExplosionPower = 5;
+    private final int RocketJumpOverchargePower = 4;
     private final int ExpectedTPS = 20;
 
     private final float MaxRocketJumpPower = 3f;
@@ -34,6 +38,8 @@ public class FirebornHandler extends ClanHandler {
     private final float MaxRocketJumpChargeTime = 5000;
 
     private final int RocketJumpCooldownTicks = 120;
+
+    private final int WaterDamageTickInterval = 30;
 
     private ChargedAbility<EmptyState> WaterDamage;
     private TimedAbility FireSpeed;
@@ -45,27 +51,30 @@ public class FirebornHandler extends ClanHandler {
 
     public void onEnable(){
         WaterDamage = new ChargedAbility<EmptyState>(Plugin,
-        (player) -> {
-            return new EmptyState();
-        },
+        (player) -> new EmptyState(),
         (player, time, state) -> {
-            if (time > 5000){
-                player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, 65, (int)(time / 2000), true, false));
+            if(player.getVehicle() instanceof Boat){
+                return ChargeStateChange.Cancel;
             }
+
+            if (time > 5000){
+                player.addPotionEffect(new PotionEffect(PotionEffectType.HUNGER, WaterDamageTickInterval + 5, (int)(time / 2000), true, false));
+            }
+
+            if (player.hasPotionEffect(PotionEffectType.CONDUIT_POWER)){
+                return ChargeStateChange.None;
+            }
+
             if (time > 10000){
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 65, (int)(time / 10000), true, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, WaterDamageTickInterval + 5, (int)(time / 10000), true, false));
             }
 
             player.damage(time / 6000d);
             return ChargeStateChange.None;
-        }, 30,
-        (player, time, state) -> {
-            return 0;
         },
-        (player, time, state) -> {
-            player.setHealth(0);
-            return 0;
-        });
+        WaterDamageTickInterval,
+        (player, time, state) -> 0,
+        (player, time, state) -> 0);
 
         RocketJump = new ChargedAbility<ExplodedState>(Plugin,
             (player) -> {
@@ -79,9 +88,9 @@ public class FirebornHandler extends ClanHandler {
                     return ChargeStateChange.Cancel;
                 }
                 if (time > MaxRocketJumpChargeTime){
-                    world.createExplosion(player.getLocation(), RocketJumpOverchargePower);
-                    player.setHealth(0);
                     state.setIsExploded(true);
+                    world.createExplosion(player.getLocation(), RocketJumpOverchargePower, false, true);
+                    player.setHealth(0);
                     return ChargeStateChange.None;
                 }
                 if (time > MaxJumpHeightChargeTime){
@@ -169,6 +178,7 @@ public class FirebornHandler extends ClanHandler {
         }
 
         e.setCancelled(true);
+        e.setTarget(null);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -179,7 +189,7 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
-        if (!e.isSneaking() || player.getLocation().getDirection().normalize().getY() < 0.9) {
+        if (!e.isSneaking() || player.getLocation().getPitch() > -60) {
             RocketJump.cancelCharge(player);
             return;
         }
@@ -195,11 +205,16 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
-        if (!player.isSneaking() || player.getLocation().getDirection().normalize().getY() < 0.9) {
+        if (!player.isSneaking() || player.getLocation().getPitch() > -60) {
             RocketJump.cancelCharge(player);
         }
         else {
             RocketJump.startCharge(player);
+        }
+
+        if (player.getVehicle() instanceof Boat){
+            WaterDamage.cancelCharge(player);
+            return;
         }
 
         var block = player.getLocation().getBlock();
@@ -224,11 +239,22 @@ public class FirebornHandler extends ClanHandler {
             return;
         }
 
-        if (e.getAction() != Action.LEFT_CLICK_AIR){
+        if (e.getAction() == Action.LEFT_CLICK_AIR){
+            RocketJump.releaseCharge(player);
             return;
         }
 
-        RocketJump.releaseCharge(player);
+        if (e.getAction() != Action.RIGHT_CLICK_AIR){
+            return;
+        }
+
+        var mainHandType = player.getInventory().getItemInMainHand().getType();
+        var offHandType = player.getInventory().getItemInOffHand().getType();
+
+        if (mainHandType == Material.FLINT_AND_STEEL || offHandType == Material.FLINT_AND_STEEL){
+            player.setFireTicks(20 * 10);
+            player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, SoundCategory.PLAYERS, 1, 1);
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -239,20 +265,23 @@ public class FirebornHandler extends ClanHandler {
         if (!isMember(player)){
             return;
         }
-        if (e.getCause() == EntityDamageEvent.DamageCause.LAVA){
-            e.setDamage(e.getDamage() * LavaResistance);
-        }
-        if (e.getCause() != EntityDamageEvent.DamageCause.FIRE &&
-            e.getCause() != EntityDamageEvent.DamageCause.HOT_FLOOR &&
-            e.getCause() != EntityDamageEvent.DamageCause.FIRE_TICK){
-            return;
-        }
 
         if (e.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK){
             FireSpeed.startAbility(player, 1500);
+            e.setCancelled(true);
+            return;
         }
 
-        e.setCancelled(true);
+        if (e.getCause() == EntityDamageEvent.DamageCause.LAVA){
+            e.setDamage(e.getDamage() * LavaResistance);
+            return;
+        }
+
+        if (e.getCause() == EntityDamageEvent.DamageCause.FIRE ||
+            e.getCause() == EntityDamageEvent.DamageCause.HOT_FLOOR ||
+            e.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK){
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -304,15 +333,26 @@ public class FirebornHandler extends ClanHandler {
         if (!isMember(player)){
             return;
         }
-        if (RocketJump.isCurrentlyCharging(player)){
-            RocketJump.cancelCharge(player);
-            return;
-        }
 
+        RocketJump.cancelCharge(player);
         WaterDamage.cancelCharge(player);
         FireSpeed.cancelAbility(player);
 
+        if (RocketJump.isCurrentlyCharging(player)){
+            var state = RocketJump.getState(player);
+            if (state.getIsExploded()){
+                e.setDeathMessage(player.displayName() + " blew up trying to reach the stars");
+                return;
+            }
+            state.setIsExploded(true);
+        }
+
         Logger.info("Fireworker died, scheduled explosion");
+
+        var delayedDrops =  e.getDrops().stream().toList();
+        var dropLocation = e.getPlayer().getLocation();
+
+        e.getDrops().clear();
 
         var task = Bukkit.getScheduler().runTaskTimerAsynchronously(Plugin, () -> {
             world.spawnParticle(Particle.FIREWORKS_SPARK, deathLocation, 100);
@@ -324,33 +364,14 @@ public class FirebornHandler extends ClanHandler {
         {
             Logger.info("Executing explosion");
             task.cancel();
-            world.createExplosion(deathLocation, ExplosionPower);
+            world.createExplosion(deathLocation, ExplosionPower, false, true);
 
         }, ExplosionDelayTicks);
+
+       Bukkit.getScheduler().scheduleSyncDelayedTask(Plugin, () -> {
+            for(var drop : delayedDrops){
+                world.dropItem(dropLocation, drop);
+            }
+        }, ExplosionDelayTicks + 5);
     }
-
-    private PotionEffect getPunishmentEffect(){
-        switch ( Random.nextInt(6)){
-            case 0:
-                return new PotionEffect(PotionEffectType.WITHER, getRandomTickCount(3,9), Random.nextInt(1, 4));
-            case 1:
-                return new PotionEffect(PotionEffectType.HUNGER, getRandomTickCount(5, 60), Random.nextInt(2, 6));
-            case 2:
-                return new PotionEffect(PotionEffectType.SLOW, getRandomTickCount(5, 20), Random.nextInt(2, 6));
-            case 3:
-                return new PotionEffect(PotionEffectType.SLOW_DIGGING, getRandomTickCount(8, 60), Random.nextInt(2, 5));
-            case 4:
-                return new PotionEffect(PotionEffectType.CONFUSION, getRandomTickCount(6, 20), 1);
-            case 5:
-                return new PotionEffect(PotionEffectType.POISON, getRandomTickCount(2, 8), Random.nextInt(1, 4));
-            default:
-                throw new UnsupportedOperationException("This should never be executed!");
-        }
-    }
-
-    private int getRandomTickCount(int minSeconds, int maxSeconds){
-        return ExpectedTPS * Random.nextInt(minSeconds, maxSeconds);
-    }
-
-
 }

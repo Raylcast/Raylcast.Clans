@@ -5,8 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.TileState;
 import org.bukkit.block.data.Ageable;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -33,6 +32,7 @@ public class EarthbornHandler extends ClanHandler {
     private final int WeatherChangeChargeTime = 10000;
 
     private final int BoneMealCost = 4;
+    private final int HarvestXPYield = 6;
 
     private TimedAbility RainSpeed;
     private ChargedAbility<LaserState> WeatherChange;
@@ -124,6 +124,63 @@ public class EarthbornHandler extends ClanHandler {
     }
 
     @EventHandler(ignoreCancelled = true)
+    public void onPlayerItemConsume(PlayerItemConsumeEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
+            return;
+        }
+
+        if (!e.getItem().getType().isEdible()){
+            return;
+        }
+
+        var itemType = e.getItem().getType();
+
+        if (itemType == Material.PORKCHOP || itemType == Material.COOKED_PORKCHOP ||
+            itemType == Material.BEEF || itemType == Material.COOKED_BEEF ||
+            itemType == Material.MUTTON || itemType == Material.COOKED_MUTTON ||
+            itemType == Material.RABBIT_STEW ||
+            itemType == Material.RABBIT || itemType == Material.COOKED_RABBIT ||
+            itemType == Material.CHICKEN || itemType == Material.COOKED_CHICKEN) {
+
+            player.setSaturation(player.getSaturation() - 2);
+            player.setFoodLevel(player.getFoodLevel() - 2);
+            return;
+        }
+
+        player.setSaturation(player.getSaturation() + 3);
+        player.setFoodLevel(player.getFoodLevel() + 3);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
+            return;
+        }
+
+        var location = player.getLocation();
+        var world = player.getWorld();
+
+        if (!player.isSneaking() || player.getLocation().getPitch() > -60) {
+            WeatherChange.cancelCharge(player);
+            return;
+        }
+        if (world.getHighestBlockAt(location.getBlockX(), location.getBlockZ()).getLocation().getBlockY() > location.getBlockY()){
+            WeatherChange.cancelCharge(player);
+            return;
+        }
+        if (world.getEnvironment() != World.Environment.NORMAL){
+            WeatherChange.cancelCharge(player);
+            return;
+        }
+
+        WeatherChange.startCharge(player);
+    }
+
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent e){
         var player = e.getPlayer();
 
@@ -134,11 +191,16 @@ public class EarthbornHandler extends ClanHandler {
         var location = player.getLocation();
         var world = player.getWorld();
 
-        if (!e.isSneaking() || player.getLocation().getDirection().normalize().getY() < 0.9) {
+        if (!e.isSneaking() || player.getLocation().getPitch() > -60) {
             WeatherChange.cancelCharge(player);
             return;
         }
         if (world.getHighestBlockAt(location.getBlockX(), location.getBlockZ()).getLocation().getBlockY() > location.getBlockY()){
+            WeatherChange.cancelCharge(player);
+            return;
+        }
+        if (world.getEnvironment() != World.Environment.NORMAL){
+            WeatherChange.cancelCharge(player);
             return;
         }
 
@@ -202,13 +264,26 @@ public class EarthbornHandler extends ClanHandler {
         }
 
         if (ageable.getAge() != ageable.getMaximumAge()){
-            if (mainItemType == Material.BONE_MEAL && mainItem.getAmount() == 1 &&
-                    PlayerHelper.takeXP(e.getPlayer(), BoneMealCost)){
-                e.setUseItemInHand(Event.Result.DENY);
-                clickedBlock.applyBoneMeal(BlockFace.DOWN);
+            if (mainItemType != Material.BONE_MEAL){
+                return;
             }
-            return;
+            if (mainItem.getAmount() > 24){
+                return;
+            }
+            if (Random.nextDouble() < 0.2) {
+                return;
+            }
+            if (!PlayerHelper.takeXP(e.getPlayer(), BoneMealCost)){
+                return;
+            }
+
+            e.setUseItemInHand(Event.Result.DENY);
+            clickedBlock.applyBoneMeal(BlockFace.DOWN);
         }
+
+
+        var expOrb = e.getPlayer().getWorld().spawn(clickedBlock.getLocation(), ExperienceOrb.class);
+        expOrb.setExperience(HarvestXPYield);
 
         ageable.setAge(0);
         e.setUseItemInHand(Event.Result.DENY);
@@ -245,21 +320,32 @@ public class EarthbornHandler extends ClanHandler {
     @EventHandler(ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent e){
         var killer = e.getEntity().getKiller();
-        var entityType = e.getEntityType();
 
-        if (entityType == EntityType.ZOMBIE || entityType == EntityType.CREEPER ||
-                entityType == EntityType.SKELETON || entityType == EntityType.ENDER_DRAGON ||
-                entityType == EntityType.SILVERFISH || entityType == EntityType.HUSK ||
-                entityType == EntityType.EVOKER || entityType == EntityType.HOGLIN) {
-            return;
-        }
         if (killer == null){
             return;
         }
         if (!isMember(killer)){
             return;
         }
-        for (int i = Random.nextInt(5); i < 5; i++){
+
+        var entityType = e.getEntityType();
+
+        if (entityType == EntityType.ZOMBIE || entityType == EntityType.CREEPER ||
+                entityType == EntityType.SKELETON || entityType == EntityType.ENDER_DRAGON ||
+                entityType == EntityType.SILVERFISH || entityType == EntityType.HUSK ||
+                entityType == EntityType.EVOKER || entityType == EntityType.HOGLIN ||
+                entityType == EntityType.WITHER || entityType == EntityType.ELDER_GUARDIAN ||
+                entityType == EntityType.GHAST || entityType == EntityType.DROWNED ||
+                entityType == EntityType.SHULKER || entityType == EntityType.PILLAGER ||
+                entityType == EntityType.WITHER_SKELETON || entityType == EntityType.ZOMBIE_VILLAGER ||
+                entityType == EntityType.WITCH || entityType == EntityType.VEX ||
+                entityType == EntityType.VINDICATOR || entityType == EntityType.STRAY ||
+                entityType == EntityType.BLAZE || entityType == EntityType.PHANTOM ||
+                entityType == EntityType.PIGLIN_BRUTE) {
+            return;
+        }
+
+        for (int i = Random.nextInt(5); i < 4; i++){
             killer.addPotionEffect(getPunishmentEffect());;
         }
     }
@@ -314,7 +400,7 @@ public class EarthbornHandler extends ClanHandler {
             Logger.info("Executing tree");
             task.cancel();
             if(!world.generateTree(deathLocation, Random, getRandomTreeType())){
-                placeDeathTemple(deathLocation);
+                placeDeathTemple(deathLocation.add(0, 1, 0));
 
             }
         }, TreeDelayTicks);
@@ -379,12 +465,11 @@ public class EarthbornHandler extends ClanHandler {
     private PotionEffect getPunishmentEffect(){
         return switch (Random.nextInt(7)) {
             case 0 -> new PotionEffect(PotionEffectType.BLINDNESS, getRandomTickCount(3, 12), 1);
-            case 1 -> new PotionEffect(PotionEffectType.HUNGER, getRandomTickCount(5, 60), Random.nextInt(2, 6));
+            case 1 -> new PotionEffect(PotionEffectType.HUNGER, getRandomTickCount(5, 15), Random.nextInt(2, 5));
             case 2 -> new PotionEffect(PotionEffectType.SLOW, getRandomTickCount(5, 20), Random.nextInt(2, 6));
-            case 3 -> new PotionEffect(PotionEffectType.SLOW_DIGGING, getRandomTickCount(8, 60), Random.nextInt(2, 5));
+            case 3 -> new PotionEffect(PotionEffectType.SLOW_DIGGING, getRandomTickCount(8, 60), Random.nextInt(0, 3));
             case 4 -> new PotionEffect(PotionEffectType.CONFUSION, getRandomTickCount(6, 20), 1);
-            case 5 -> new PotionEffect(PotionEffectType.POISON, getRandomTickCount(2, 8), Random.nextInt(1, 4));
-            case 6 -> new PotionEffect(PotionEffectType.WEAKNESS, getRandomTickCount(8, 24), Random.nextInt(1, 5));
+            case 5 -> new PotionEffect(PotionEffectType.WEAKNESS, getRandomTickCount(4, 18), Random.nextInt(1, 4));
             default -> throw new UnsupportedOperationException("This should never be executed!");
         };
     }

@@ -1,9 +1,6 @@
 package raylcast.clans.handlers;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
+import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,7 +21,7 @@ import raylcast.clans.services.TimedAbility;
 
 public class EnderbornHandler extends ClanHandler {
     private final double ExperienceMultiplier = 1.2;
-    private final double PearlDisappearChance = 0.1;
+    private final double PearlDisappearChance = 0.09;
 
     private final double SphereRadius = 3;
     private final int HoverCooldownTicks = 200;
@@ -150,6 +147,7 @@ public class EnderbornHandler extends ClanHandler {
         player.addPotionEffect(speed);
 
         var target = e.getTo();
+        var world = player.getWorld();
 
         player.teleport(target);
         e.setCancelled(true);
@@ -173,18 +171,24 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        if (Random.nextDouble() > 0.1){
+        var world = player.getWorld();
+
+        if (world.getEnvironment() == World.Environment.THE_END){
+            return;
+        }
+
+        if (Random.nextDouble() > 0.15){
             return;
         }
 
         for(int i = 0; i < 10; i++){
-            int offsetX = Random.nextInt(32) - 16;
-            int offsetY = Random.nextInt(32) - 16;
-            int offsetZ = Random.nextInt(32) - 16;
+            int offsetX = Random.nextInt(40) - 20;
+            int offsetY = Random.nextInt(40) - 20;
+            int offsetZ = Random.nextInt(40) - 20;
 
             int airCount = 0;
 
-            for(; player.getLocation().getBlockY() + offsetY > -60; offsetY--) {
+            for(; player.getLocation().getBlockY() + offsetY > -58 && offsetY > -50; offsetY--) {
                 var target = player.getLocation().add(offsetX, offsetY, offsetZ);
 
                 if (target.getBlock().getType() == Material.AIR){
@@ -196,6 +200,8 @@ public class EnderbornHandler extends ClanHandler {
                     continue;
                 }
                 if (player.teleport(target.add(0, 1, 0))){
+                    world.spawnParticle(Particle.EXPLOSION_LARGE, target, 2);
+                    world.playSound(player.getLocation(), Sound.ITEM_CHORUS_FRUIT_TELEPORT, 1, 1);
                     return;
                 }
             }
