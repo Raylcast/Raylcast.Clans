@@ -70,7 +70,7 @@ public class JoinCommand extends SubCommand {
     }
 
     @Override
-    public List<String> onTabComplete(List<String> args) {
+    public List<String> onTabComplete(CommandSender sender, List<String> args) {
         if (args.size() > 1){
            return new ArrayList<>();
         }

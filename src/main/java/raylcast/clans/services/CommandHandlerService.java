@@ -2,11 +2,14 @@ package raylcast.clans.services;
 
 import net.luckperms.api.LuckPerms;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import raylcast.clans.commands.GroupedCommand;
 import raylcast.clans.commands.clan.ClanCommand;
 import raylcast.clans.commands.clan.CommandBase;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +50,13 @@ public class CommandHandlerService {
     public void onDisable(){
     }
 
-    public List<String> onTabComplete(String label, List<String> args){
+    public List<String> onTabComplete(CommandSender sender, String label, List<String> args){
         if (args.isEmpty()){
-            return Commands.values().stream().map(CommandBase::getName).filter(name -> name.toUpperCase().startsWith(label.toUpperCase())).toList();
+            return Commands.values().stream()
+                    .filter(command -> !(command instanceof GroupedCommand groupedCommand) || sender.hasPermission(groupedCommand.getPermission()))
+                    .map(CommandBase::getName)
+                    .filter(name -> name.toUpperCase().startsWith(label.toUpperCase()))
+                    .toList();
         }
 
         var command = Commands.get(label.toUpperCase());
@@ -58,6 +65,10 @@ public class CommandHandlerService {
             return null;
         }
 
-        return command.onTabComplete(args.stream().toList());
+        if (command instanceof GroupedCommand groupedCommand && !sender.hasPermission(groupedCommand.getPermission())){
+            return new ArrayList<>();
+        }
+
+        return command.onTabComplete(sender, args.stream().toList());
     }
 }

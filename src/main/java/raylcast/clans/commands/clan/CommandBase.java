@@ -9,7 +9,7 @@ import java.util.List;
 public abstract class CommandBase implements CommandExecutor {
     public abstract String getName();
 
-    public List<String> onTabComplete(List<String> args){
+    public List<String> onTabComplete(CommandSender sender, List<String> args){
         return null;
     }
 

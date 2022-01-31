@@ -4,12 +4,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.permissions.Permission;
 import raylcast.clans.commands.clan.CommandBase;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class GroupedCommand extends CommandBase {
     private final Map<String, SubCommand> SubCommands;
@@ -25,18 +23,23 @@ public abstract class GroupedCommand extends CommandBase {
     }
 
     public abstract SubCommand[] loadSubcommands();
+    public abstract Permission getPermission();
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
+        if (!commandSender.hasPermission(getPermission())){
+            return true;
+        }
+
         if (args.length == 0){
-            commandSender.sendMessage(getGroupedUsage());
+            commandSender.sendMessage(getGroupedUsage(commandSender));
             return true;
         }
 
         var subCommand = SubCommands.get(args[0].toUpperCase());
 
         if (subCommand == null){
-            commandSender.sendMessage(getGroupedUsage());
+            commandSender.sendMessage(getGroupedUsage(commandSender));
             return true;
         }
         if (!commandSender.hasPermission(subCommand.getPermission())){
@@ -54,24 +57,33 @@ public abstract class GroupedCommand extends CommandBase {
     }
 
     @Override
-    public List<String> onTabComplete(List<String> args) {
+    public List<String> onTabComplete(CommandSender sender, List<String> args) {
         if (args.isEmpty()) {
-            return SubCommands.values().stream().map(SubCommand::getName).toList();
+            return SubCommands.values().stream()
+                    .filter(command -> sender.hasPermission(command.getPermission()))
+                    .map(SubCommand::getName).toList();
         }
         if (args.size() == 1){
-            return SubCommands.values().stream().map(CommandBase::getName).filter(name -> name.toUpperCase().startsWith(args.get(0).toUpperCase())).toList();
+            return SubCommands.values().stream()
+                    .filter(command -> sender.hasPermission(command.getPermission()))
+                    .map(CommandBase::getName)
+                    .filter(name -> name.toUpperCase().startsWith(args.get(0).toUpperCase()))
+                    .toList();
         }
 
         var command = SubCommands.get(args.get(0).toUpperCase());
 
         if(command == null){
-            return null;
+            return new ArrayList<>();
+        }
+        if (!sender.hasPermission(command.getPermission())){
+            return new ArrayList<>();
         }
 
-        return command.onTabComplete(args.stream().skip(1).toList());
+        return command.onTabComplete(sender, args.stream().skip(1).toList());
     }
 
-    private String getGroupedUsage(){
+    private String getGroupedUsage(CommandSender sender){
         var sb = new StringBuilder();
 
         sb.append("Use /");
@@ -80,6 +92,9 @@ public abstract class GroupedCommand extends CommandBase {
         sb.append('\n');
 
         for(var subCommand : SubCommands.values()){
+            if (!sender.hasPermission(subCommand.getPermission())){
+                continue;
+            }
             sb.append(ChatColor.GOLD);
             sb.append(subCommand.getName());
             sb.append(" : ");
