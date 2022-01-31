@@ -63,10 +63,18 @@ public class RaylcastClans extends JavaPlugin {
     public void onEnable() {
         super.onEnable();
 
+        var customItems = new CustomItems(this);
+
         for(var clanHandler : ClanHandlers){
             getServer().getPluginManager().registerEvents(clanHandler, this);
             clanHandler.onEnable();
         }
+
+        for(var recipe : customItems.getRecipes()){
+            Bukkit.addRecipe(recipe);
+        }
+
+        getServer().getPluginManager().registerEvents(new DragonFightHandler(this), this);
 
         var registration = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
 
