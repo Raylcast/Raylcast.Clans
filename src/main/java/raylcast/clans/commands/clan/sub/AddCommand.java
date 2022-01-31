@@ -39,7 +39,7 @@ public class AddCommand extends SubCommand {
 
     @Override
     public boolean onCommand(CommandSender commandSender, List<String> args) {
-        if (args.size() != 2){
+        if (args.size() != 3){
             return false;
         }
         if (!(commandSender instanceof Player player)) {
@@ -54,6 +54,8 @@ public class AddCommand extends SubCommand {
             return true;
         }
 
+        boolean enabled = Boolean.parseBoolean(args.get(2));
+
         if (LuckPerms == null){
             LuckPerms = Objects.requireNonNull(Bukkit.getServicesManager().getRegistration(LuckPerms.class)).getProvider();
         }
@@ -64,7 +66,17 @@ public class AddCommand extends SubCommand {
                 var userData = user.data();
                 var node = userData.toCollection().stream().filter(n -> n.getKey().equals(clanType.getPermission().getName())).findFirst();
                 node.ifPresent(userData::remove);
-                user.data().add(Node.builder(clanType.getPermission().getName()).build());
+
+                var disabledNode = userData.toCollection().stream().filter(n -> n.getKey().equals(clanType.getPermission().getName() + ".disabled")).findFirst();
+                disabledNode.ifPresent(userData::remove);
+
+                String permission = clanType.getPermission().getName();
+
+                if (!enabled){
+                    permission += ".disabled";
+                }
+
+                user.data().add(Node.builder(permission).build());
             });
 
             player.sendMessage(ChatColor.GREEN + "Success, Clan has been added to " + target.getName());
@@ -77,12 +89,18 @@ public class AddCommand extends SubCommand {
     }
 
     @Override
-    public List<String> onTabComplete(List<String> args) {
-        if (args.size() >= 3){
+    public List<String> onTabComplete(CommandSender sender, List<String> args) {
+        if (args.size() > 3){
             return new ArrayList<>();
         }
         if (args.size() == 2){
             return Arrays.stream(ClanType.values()).map(Enum::name).toList();
+        }
+        if (args.size() == 3){
+            var lst = new ArrayList<String>();
+            lst.add("True");
+            lst.add("False");
+            return lst;
         }
 
         return null;
