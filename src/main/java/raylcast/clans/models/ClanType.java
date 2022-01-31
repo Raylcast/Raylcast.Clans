@@ -7,8 +7,8 @@ public enum ClanType {
     None(0, null),
     Fireborn(10, new Permission("raylcast.clans.member.fireborn")),
     Enderborn(20, new Permission("raylcast.clans.member.enderborn")),
-    Earthborn(30, new Permission("raylcast.clans.member.earthborn")),
-    Thunderborn(40, new Permission("raylcast.clans.member.thunderborn"));
+    Earthborn(30, new Permission("raylcast.clans.member.earthborn"));
+    //Thunderborn(40, new Permission("raylcast.clans.member.thunderborn"));
 
     private final int Id;
     private final Permission Permission;
@@ -27,19 +27,14 @@ public enum ClanType {
     }
 
     public static ClanType fromId(int id){
-        switch (id){
-            case 0:
-                return None;
-            case 10:
-                return Fireborn;
-            case 20:
-                return Enderborn;
-            case 30:
-                return Earthborn;
-            case 40:
-                return Thunderborn;
-            default:
-                throw new RuntimeException("Invalid ClanType Id!");
-        }
+        return switch (id) {
+            case 0 -> None;
+            case 10 -> Fireborn;
+            case 20 -> Enderborn;
+            case 30 -> Earthborn;
+            //case 40:
+            //return Thunderborn;
+            default -> throw new RuntimeException("Invalid ClanType Id!");
+        };
     }
 }

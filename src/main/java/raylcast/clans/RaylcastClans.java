@@ -44,7 +44,7 @@ public class RaylcastClans extends JavaPlugin {
         ClanHandlers.add(new FirebornHandler(ClanType.Fireborn.getPermission()));
         ClanHandlers.add(new EnderbornHandler(ClanType.Enderborn.getPermission()));
         ClanHandlers.add(new EarthbornHandler(ClanType.Earthborn.getPermission()));
-        ClanHandlers.add(new ThunderbornHandler(ClanType.Thunderborn.getPermission()));
+        //ClanHandlers.add(new ThunderbornHandler(ClanType.Thunderborn.getPermission()));
 
         for (var clanHandler : ClanHandlers){
             clanHandler.injectServices(Logger, Random, this, Config);
@@ -92,7 +92,7 @@ public class RaylcastClans extends JavaPlugin {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        return CommandHandlerService.onTabComplete(command.getName(), Arrays.stream(args).toList());
+        return CommandHandlerService.onTabComplete(sender, command.getName(), Arrays.stream(args).toList());
     }
 
 
