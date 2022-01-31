@@ -51,6 +51,10 @@ public class ChargedAbility<T> {
         OnReleaseHandler = onReleaseHandler;
     }
 
+    public T getState(Player player){
+        return StateMap.get(player);
+    }
+
     public void startCharge(Player player){
         if (ChargeStartTimes.containsKey(player)){
             return;
