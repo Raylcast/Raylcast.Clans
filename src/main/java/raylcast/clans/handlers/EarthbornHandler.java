@@ -345,7 +345,7 @@ public class EarthbornHandler extends ClanHandler {
             return;
         }
 
-        for (int i = Random.nextInt(5); i < 4; i++){
+        for (int i = Random.nextInt(6); i < 4; i++){
             killer.addPotionEffect(getPunishmentEffect());;
         }
     }
@@ -463,7 +463,7 @@ public class EarthbornHandler extends ClanHandler {
     }
 
     private PotionEffect getPunishmentEffect(){
-        return switch (Random.nextInt(7)) {
+        return switch (Random.nextInt(6)) {
             case 0 -> new PotionEffect(PotionEffectType.BLINDNESS, getRandomTickCount(3, 12), 1);
             case 1 -> new PotionEffect(PotionEffectType.HUNGER, getRandomTickCount(5, 15), Random.nextInt(2, 5));
             case 2 -> new PotionEffect(PotionEffectType.SLOW, getRandomTickCount(5, 20), Random.nextInt(2, 6));
