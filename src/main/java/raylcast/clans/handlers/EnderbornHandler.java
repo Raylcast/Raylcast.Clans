@@ -173,12 +173,30 @@ public class EnderbornHandler extends ClanHandler {
 
         var world = player.getWorld();
 
+        float cutOff = 0;
+
         if (world.getEnvironment() == World.Environment.THE_END){
             return;
         }
+        else if (world.getEnvironment() == World.Environment.NETHER) {
+            if (Random.nextDouble() > 0.25){
+                return;
+            }
+        }
+        else if (world.getEnvironment() == World.Environment.NORMAL){
+            if (Random.nextDouble() > 0.08) {
+                return;
+            }
+        }
 
-        if (Random.nextDouble() > 0.15){
-            return;
+        int maxNegativeOffsetY = -30;
+        if (world.getEnvironment() == World.Environment.NETHER){
+            maxNegativeOffsetY = -75;
+        }
+
+        int minimumY = 5;
+        if (world.getEnvironment() == World.Environment.NORMAL){
+            minimumY = -58;
         }
 
         for(int i = 0; i < 10; i++){
@@ -188,7 +206,7 @@ public class EnderbornHandler extends ClanHandler {
 
             int airCount = 0;
 
-            for(; player.getLocation().getBlockY() + offsetY > -58 && offsetY > -50; offsetY--) {
+            for(; player.getLocation().getBlockY() + offsetY > minimumY && offsetY > maxNegativeOffsetY; offsetY--) {
                 var target = player.getLocation().add(offsetX, offsetY, offsetZ);
 
                 if (target.getBlock().getType() == Material.AIR){
