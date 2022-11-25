@@ -3,80 +3,70 @@ package raylcast.clans.services;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import raylcast.clans.models.AbilityEntry;
 import raylcast.clans.models.TimedAbilityEntry;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class TimedAbility {
-    private final Map<Player, TimedAbilityEntry> AbilityStartTimes;
-    private final Set<Player> PlayersOnCooldown;
+public class PassiveAbilitiy {
+    private final Map<Player, AbilityEntry> AbilityStartTimes;
 
     private final Plugin Plugin;
 
+    private final Function<Player, Boolean> OnUpdateHandler;
     private final Consumer<Player> OnStartHandler;
 
     private final BiFunction<Player, Long, Boolean> OnTickHandler;
     private final int TickInterval;
 
-    private final BiFunction<Player, Long, Integer> OnCancelHandler;
+    private final BiConsumer<Player, Long> OnStopHandler;
 
-    public TimedAbility(Plugin plugin,
-                         Consumer<Player> onStartHandler,
-                         BiFunction<Player, Long, Boolean> onTickHandler, int tickInterval,
-                         BiFunction<Player, Long, Integer> onCancelHandler){
+    public PassiveAbilitiy(Plugin plugin,
+                        Function<Player, Boolean> onUpdateHandler, Consumer<Player> onStartHandler,
+                        BiFunction<Player, Long, Boolean> onTickHandler, int tickInterval,
+                        BiConsumer<Player, Long> onStopHandler){
         AbilityStartTimes = new HashMap<>();
-        PlayersOnCooldown = new HashSet<>();
 
         Plugin = plugin;
 
+        OnUpdateHandler = onUpdateHandler;
         OnStartHandler = onStartHandler;
 
         OnTickHandler = onTickHandler;
         TickInterval = tickInterval;
 
-        OnCancelHandler = onCancelHandler;
+        OnStopHandler = onStopHandler;
     }
+
 
     public void onDisable(){
         long now = System.currentTimeMillis();
         AbilityStartTimes.forEach((player, entry) -> {
-            OnCancelHandler.apply(player, now - entry.StartTime);
+            OnStopHandler.accept(player, now - entry.StartTime);
             Bukkit.getScheduler().cancelTask(entry.TaskId);
         });
     }
 
-    public void startAbility(Player player, int duration){
-        var current = AbilityStartTimes.get(player);
-
-        if (current != null){
-            long now = System.currentTimeMillis();
-
-            if (current.StartTime + current.Duration >= now + duration){
-                return;
-            }
-
-            current.StartTime = now;
-            current.Duration = duration;
-            AbilityStartTimes.put(player, current);
+    public void update(Player player){
+        boolean shouldCancel = OnUpdateHandler.apply(player);
+        if (shouldCancel){
+            cancelAbility(player);
             return;
         }
-        if (PlayersOnCooldown.contains(player)){
+
+        if (isCurrentlyActive(player)){
             return;
         }
 
         int taskId = Bukkit.getScheduler().runTaskTimer(Plugin, () -> {
             long now = System.currentTimeMillis();
             var entry = AbilityStartTimes.get(player);
-
-            if (now - entry.StartTime > entry.Duration){
-                cancelAbility(player);
-                return;
-            }
 
             boolean cancelAbility = OnTickHandler.apply(player, now - entry.StartTime);
 
@@ -85,7 +75,7 @@ public class TimedAbility {
             }
         }, 1, TickInterval).getTaskId();
 
-        var entry = new TimedAbilityEntry(System.currentTimeMillis(), taskId, duration);
+        var entry = new AbilityEntry(System.currentTimeMillis(), taskId);
         AbilityStartTimes.put(player, entry);
         OnStartHandler.accept(player);
     }
@@ -99,12 +89,7 @@ public class TimedAbility {
 
         long now = System.currentTimeMillis();
         Bukkit.getScheduler().cancelTask(entry.TaskId);
-        long cooldown = OnCancelHandler.apply(player, now - entry.StartTime);
-
-        if (cooldown > 0){
-            PlayersOnCooldown.add(player);
-            Bukkit.getScheduler().scheduleSyncDelayedTask(Plugin, () -> PlayersOnCooldown.remove(player), cooldown);
-        }
+        OnStopHandler.accept(player, now - entry.StartTime);
     }
 
     public boolean isCurrentlyActive(Player player){

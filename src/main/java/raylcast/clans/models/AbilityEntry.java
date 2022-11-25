@@ -1,9 +1,11 @@
 package raylcast.clans.models;
 
-public abstract class AbilityEntry {
+public class AbilityEntry {
     public long StartTime;
+    public int TaskId;
 
-    public AbilityEntry(long startTime){
+    public AbilityEntry(long startTime, int taskId){
         StartTime = startTime;
+        TaskId = taskId;
     }
 }

@@ -6,9 +6,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.LingeringPotionSplashEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.Permission;
@@ -16,7 +16,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import org.spigotmc.event.entity.EntityDismountEvent;
-import raylcast.clans.models.ClanType;
+import raylcast.clans.services.PassiveAbilitiy;
 import raylcast.clans.services.TimedAbility;
 
 public class EnderbornHandler extends ClanHandler {
@@ -26,7 +26,8 @@ public class EnderbornHandler extends ClanHandler {
     private final double SphereRadius = 3;
     private final int HoverCooldownTicks = 200;
 
-    private TimedAbility HoverAbility;
+    private TimedAbility FeatherHover;
+    private PassiveAbilitiy NetherWeakness;
 
     public EnderbornHandler(Permission clanMemberPermission) {
         super(clanMemberPermission);
@@ -34,7 +35,7 @@ public class EnderbornHandler extends ClanHandler {
 
     @Override
     public void onEnable() {
-        HoverAbility = new TimedAbility(Plugin,
+        FeatherHover = new TimedAbility(Plugin,
             player -> {
                 var world = player.getWorld();
                 world.spawnEntity(player.getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
@@ -80,13 +81,29 @@ public class EnderbornHandler extends ClanHandler {
 
                 return HoverCooldownTicks;
             });
+
+        NetherWeakness = new PassiveAbilitiy(Plugin,
+            (player) -> {
+                return player.hasPotionEffect(PotionEffectType.FIRE_RESISTANCE) ||
+                        player.getWorld().getEnvironment() != World.Environment.NETHER;
+            },
+            (player) -> {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 160, 0));
+            },
+            (player, time) -> {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, 160, 0));
+                return player.hasPotionEffect(PotionEffectType.FIRE_RESISTANCE);
+            }, 100,
+            (player, time) -> {
+                player.removePotionEffect(PotionEffectType.WEAKNESS);
+            });
     }
 
     @Override
     public void onDisable() {
-        HoverAbility.onDisable();
+        FeatherHover.onDisable();
+        NetherWeakness.onDisable();
     }
-
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
     public void onEntityDismount(EntityDismountEvent e){
@@ -102,13 +119,15 @@ public class EnderbornHandler extends ClanHandler {
 
     @EventHandler(ignoreCancelled = false)
     public void onPlayerInteract(PlayerInteractEvent e){
-        if (e.getAction() != Action.RIGHT_CLICK_AIR){
-            return;
-        }
-
         var player = e.getPlayer();
 
         if (!isMember(player)){
+            return;
+        }
+
+        NetherWeakness.update(player);
+
+        if (e.getAction() != Action.RIGHT_CLICK_AIR){
             return;
         }
         if (player.getInventory().getItemInMainHand().getType() != Material.FEATHER){
@@ -118,7 +137,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.startAbility(player, 7500);
+        FeatherHover.startAbility(player, 7500);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
@@ -141,7 +160,7 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.cancelAbility(player);
+        FeatherHover.cancelAbility(player);
 
         var speed = new PotionEffect(PotionEffectType.SPEED, 10 * 20, 1, false, false);
         player.addPotionEffect(speed);
@@ -165,6 +184,8 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
+        Bukkit.getScheduler().scheduleSyncDelayedTask(Plugin, () -> NetherWeakness.update(player), 2);
+
         if(e.getItem().getType() == Material.POTION ||
            e.getItem().getType() == Material.MILK_BUCKET ||
            e.getItem().getType() == Material.CHORUS_FRUIT){
@@ -173,18 +194,16 @@ public class EnderbornHandler extends ClanHandler {
 
         var world = player.getWorld();
 
-        float cutOff = 0;
-
         if (world.getEnvironment() == World.Environment.THE_END){
             return;
         }
         else if (world.getEnvironment() == World.Environment.NETHER) {
-            if (Random.nextDouble() > 0.25){
+            if (Random.nextDouble() > 0.33){
                 return;
             }
         }
         else if (world.getEnvironment() == World.Environment.NORMAL){
-            if (Random.nextDouble() > 0.08) {
+            if (Random.nextDouble() > 0.10) {
                 return;
             }
         }
@@ -199,12 +218,16 @@ public class EnderbornHandler extends ClanHandler {
             minimumY = -58;
         }
 
-        for(int i = 0; i < 10; i++){
-            int offsetX = Random.nextInt(40) - 20;
-            int offsetY = Random.nextInt(40) - 20;
-            int offsetZ = Random.nextInt(40) - 20;
+        for(int i = 0; i < 12; i++){
+            int offsetX = Random.nextInt(50) - 25;
+            int offsetY = Random.nextInt(50) - 15;
+            int offsetZ = Random.nextInt(50) - 25;
 
             int airCount = 0;
+
+            if (player.getLocation().getY() + offsetY > world.getMaxHeight() - 3){
+                offsetY = world.getMaxHeight() - player.getLocation().getBlockY() - 3;
+            }
 
             for(; player.getLocation().getBlockY() + offsetY > minimumY && offsetY > maxNegativeOffsetY; offsetY--) {
                 var target = player.getLocation().add(offsetX, offsetY, offsetZ);
@@ -234,7 +257,8 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.cancelAbility(player);
+        FeatherHover.cancelAbility(player);
+        NetherWeakness.cancelAbility(player);
 
         e.setDroppedExp(0);
         e.setNewExp(0);
@@ -254,7 +278,19 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.cancelAbility(player);
+        FeatherHover.cancelAbility(player);
+        NetherWeakness.cancelAbility(player);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerRespawn(PlayerRespawnEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
+            return;
+        }
+
+        NetherWeakness.update(player);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -265,6 +301,51 @@ public class EnderbornHandler extends ClanHandler {
             return;
         }
 
-        HoverAbility.cancelAbility(player);
+        FeatherHover.cancelAbility(player);
+        NetherWeakness.cancelAbility(player);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
+            return;
+        }
+
+        NetherWeakness.update(player);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerJoin(PlayerJoinEvent e){
+        var player = e.getPlayer();
+
+        if (!isMember(player)){
+            return;
+        }
+
+        NetherWeakness.update(player);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPotionSplash(PotionSplashEvent e){
+        if (e.getEntity().getWorld().getEnvironment() != World.Environment.NETHER){
+            return;
+        }
+        if (e.getPotion().getEffects().stream().noneMatch(effect -> effect.getType() == PotionEffectType.FIRE_RESISTANCE)){
+            return;
+        }
+
+        for(var affected : e.getAffectedEntities()){
+            if (!(affected instanceof Player player)){
+                continue;
+            }
+
+            if (!isMember(player)){
+                continue;
+            }
+
+            Bukkit.getScheduler().scheduleSyncDelayedTask(Plugin, () -> NetherWeakness.update(player), 2);
+        }
     }
 }
